@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF 업로드 및 관리</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h2 {
+            text-align: center;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .actions {
+            text-align: center;
+        }
+        .actions form {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>PDF 업로드 및 관리</h2>
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="file" id="file-input" name="file" accept="application/pdf">
+            <button type="submit">업로드</button>
+        </form>
+
+        <h3>업로드된 파일 목록</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>파일명</th>
+                    <th>업로드 날짜</th>
+                    <th>작업</th>
+                </tr>
+            </thead>
+            <tbody id="file-list">
+                {% for file in files %}
+                <tr>
+                    <td>{{ file.filename }}</td>
+		    <td>{{ file.upload_date.strftime('%Y-%m-%d %H:%M:%S') if file.upload_date else '날짜 없음' }}</td> <!-- 날짜 포맷팅 -->
+                    <td class="actions">
+                        <!-- 삭제 폼 -->
+                        <form action="/delete/{{ file.filename }}" method="post" style="margin-top: 5px;">
+                            <button type="submit" onclick="return confirm('파일을 삭제하시겠습니까?')">삭제</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <script>
+        document.getElementById('upload-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('file-input');
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+    
+            fetch('/train', {  // /train 경로로 POST 요청을 보냄
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())  // JSON 응답 처리
+            .then(data => {
+                alert(data.message);  // 서버에서 받은 메시지를 경고창으로 표시
+                location.reload();  // 업로드 후 페이지를 새로고침하여 파일 목록 업데이트
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);  // 오류 처리
+            });
+        });
+    </script>
+</body>
+</html>
+

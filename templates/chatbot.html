@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .chat-container {
+            width: 30%;
+            max-width: 90%;
+            height: calc(100vh - 2px);
+            margin: 1mm 0;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-box {
+            padding: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            border-bottom: 1px solid #ccc;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-input-container {
+            display: flex;
+            border-top: 1px solid #ccc;
+        }
+        .chat-input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 0 0 0 10px;
+            box-sizing: border-box;
+        }
+        .send-button {
+            padding: 0 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 0 0 10px 0;
+            cursor: pointer;
+        }
+        .send-button:hover {
+            background-color: #45a049;
+        }
+        .message-container {
+            display: flex;
+            margin: 5px;
+            opacity: 0;
+            animation: fadeInUp 0.5s forwards;
+        }
+        .user-message, .bot-message {
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 75%;
+            position: relative;
+        }
+        .user-message {
+            background-color: #e1ffc7;
+            align-self: flex-end;
+            text-align: right;
+            margin-left: auto;
+        }
+        .bot-message {
+            background-color: #f1f0f0;
+            align-self: flex-start;
+            text-align: left;
+            margin-right: auto;
+        }
+        .bot-message::after, .user-message::after {
+            content: '';
+            position: absolute;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+        }
+        .bot-message::after {
+            left: -10px;
+            border-right: 10px solid #f1f0f0;
+            top: 10px;
+        }
+        .user-message::after {
+            right: -10px;
+            border-left: 10px solid #e1ffc7;
+            top: 10px;
+        }
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-box" id="chat-box"></div>
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chat-input" placeholder="메시지를 입력하세요...">
+            <button class="send-button" id="send-button">보내기</button>
+            <button id="stop-button">중지</button> <!-- 중지 버튼 -->
+        </div>
+    </div>
+    <script>
+        document.getElementById('send-button').addEventListener('click', function () {
+            const inputElement = document.getElementById('chat-input');
+            const message = inputElement.value;
+            if (message.trim() !== '') {
+                addMessageToChatBox('user-message', message);
+                inputElement.value = '';
+                fetchChatbotResponse(message);
+            }
+        });
+
+        document.getElementById('chat-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const message = e.target.value;
+                if (message.trim() !== '') {
+                    addMessageToChatBox('user-message', message);
+                    e.target.value = '';
+                    fetchChatbotResponse(message);
+                }
+            }
+        });
+
+        document.getElementById('stop-button').addEventListener('click', function() {
+            fetch('/stop_chat', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();  // 대화 중지 후 페이지를 새로고침
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        });
+
+        function addMessageToChatBox(className, message) {
+            const chatBox = document.getElementById('chat-box');
+            const messageContainer = document.createElement('div');
+            const messageElement = document.createElement('div');
+            messageContainer.className = 'message-container';
+            messageElement.className = className;
+            messageElement.innerHTML = message;
+            messageContainer.appendChild(messageElement);
+            chatBox.appendChild(messageContainer);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function fetchChatbotResponse(message) {
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message }),  // 서버로 메시지 전송
+                });
+
+                const result = await response.json();  // JSON 응답으로 결과를 받아옴
+                addMessageToChatBox('bot-message', result.answer);  // 서버에서 받은 답변 출력
+            } catch (error) {
+                addMessageToChatBox('bot-message', 'Error: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
+
